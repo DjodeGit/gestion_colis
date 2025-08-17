@@ -1,0 +1,82 @@
+<!-- templates/mon_app/demande_api.html -->
+{% extends 'base.html' %}
+{% block title %}Envoyer infos — Colis Express{% endblock %}
+{% block content %}
+<section class="py-12 px-4 bg-gray-50">
+  <div class="max-w-3xl mx-auto bg-white rounded-xl shadow p-6">
+    <h2 class="text-2xl font-bold mb-4">Envoyer vos informations</h2>
+    <p class="text-gray-600 mb-6">Remplissez le formulaire ci-dessous ; l'entreprise recevra vos informations par email.</p>
+
+    <form id="demande-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium">Nom complet</label>
+        <input name="nom" required class="w-full border rounded p-3" placeholder="Entrez votre nom"/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Email</label>
+        <input name="email" type="email" required class="w-full border rounded p-3" placeholder="example@mail.com"/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Téléphone</label>
+        <input name="telephone" required class="w-full border rounded p-3" placeholder="679590426"/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Adresse</label>
+        <input name="adresse" required class="w-full border rounded p-3" placeholder="Banengo II, Bafoussam"/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Description du colis</label>
+        <textarea name="description_colis" required class="w-full border rounded p-3" rows="4"></textarea>
+      </div>
+
+      <div class="text-center">
+        <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700">Envoyer</button>
+      </div>
+    </form>
+
+    <div id="msg" class="mt-4 hidden p-3 rounded"></div>
+  </div>
+</section>
+
+<script>
+document.getElementById('demande-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const payload = {
+    nom: f.nom.value.trim(),
+    email: f.email.value.trim(),
+    telephone: f.telephone.value.trim(),
+    adresse: f.adresse.value.trim(),
+    description_colis: f.description_colis.value.trim(),
+  };
+
+  // CSRF token si besoin (ici POST to /api/demandes/ sur le même domaine)
+  const csrftokenElement = document.querySelector('[name=csrfmiddlewaretoken]');
+  const headers = {'Content-Type': 'application/json'};
+  if (csrftokenElement) headers['X-CSRFToken'] = csrftokenElement.value;
+
+  try {
+    const res = await fetch('/api/demandes/', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(()=> ({}));
+    const msg = document.getElementById('msg');
+    msg.classList.remove('hidden');
+    if (!res.ok) {
+      msg.className = 'mt-4 p-3 rounded bg-red-50 text-red-700';
+      msg.textContent = data.detail || JSON.stringify(data);
+      return;
+    }
+    msg.className = 'mt-4 p-3 rounded bg-green-50 text-green-700';
+    msg.textContent = 'Merci ! Vos informations ont été envoyées. L\'entreprise va vous contacter.';
+    f.reset();
+  } catch (err) {
+    const msg = document.getElementById('msg');
+    msg.className = 'mt-4 p-3 rounded bg-red-50 text-red-700';
+    msg.textContent = 'Erreur réseau — réessayez plus tard.';
+  }
+});
+</script>
+{% endblock %}
