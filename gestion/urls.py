@@ -18,23 +18,34 @@ from django.contrib import admin
 from django.urls import path, include,re_path
 from rest_framework.routers import DefaultRouter
 from django.contrib.auth import views as auth_views
-from colis.views import UtilisateurViewSet, ExpediteurViewSet, DemandeInfosViewSet, DestinataireViewSet, ColisViewSet, AgentViewSet, NotificationViewSet, ArticleViewSet,LivraisonViewSet, EnregistrementScanViewSet
+from colis.views import (ExpediteurViewSet, DemandeInfosViewSet, DestinataireViewSet, ColisViewSet, AgentViewSet, NotificationViewSet, 
+    ArticleViewSet,LivraisonViewSet, EnregistrementScanViewSet, AuthViewSet, TacheViewSet,AgentViewSet
+)
+                       
+                       
                         
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+
 
 router = DefaultRouter()
-router.register(r'utilisateurs', UtilisateurViewSet)
+#router.register(r'user', UserViewSet)
 router.register(r'expediteurs', ExpediteurViewSet)
 router.register(r'demandes', DemandeInfosViewSet, basename='demandes')
-router.register(r'destinataires', DestinataireViewSet)
-router.register(r'colis', ColisViewSet)
-router.register(r'agents', AgentViewSet)
-router.register(r'notifications', NotificationViewSet)
-router.register(r'articles', ArticleViewSet)
-router.register(r'livraisons', LivraisonViewSet)
+router.register(r'destinataires', DestinataireViewSet, basename='destinataires')
+router.register(r'colis', ColisViewSet, basename='colis')
+router.register(r'agents', AgentViewSet, basename='agents')
+router.register(r'notifications', NotificationViewSet, basename='notifications',)
+router.register(r'articles', ArticleViewSet, basename='articles')
+router.register(r'livraisons', LivraisonViewSet, basename='livraison')
 router.register(r'scans', EnregistrementScanViewSet)
+router.register(r'auth', AuthViewSet, basename='auth')
+router.register(r'taches', TacheViewSet,basename='tache')
 
 
 schema_view = get_schema_view(
@@ -54,5 +65,20 @@ urlpatterns = [
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('api-auth/', include('rest_framework.urls')),
-     path('api/', include(router.urls)),  # Routes pour les APIs CRUD 
+    path('api/', include(router.urls)),  # Routes pour les APIs CRUD 
+     # Obtenir un token avec login et mot de passe
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    
+    # Rafraîchir un token expiré
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path("", include("colis.urls")),    # <- ajoute ça
+    path("api/", include("colis.urls")),  # selon ton organisation actuelle
 ]
+
+
+
+
+
+
+
+

@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Accueil - ColisExpress{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-blue-900 text-white py-20">
+    <div class="container mx-auto px-4 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-6">Gestion de Colis Professionnelle</h1>
+        <p class="text-xl mb-8 max-w-2xl mx-auto">Suivez, gérez et livrez vos colis avec notre plateforme complète et intuitive.</p>
+        <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+            {% if user.is_authenticated %}
+                {% if user.user_type == 'expediteur' %}
+                <a href="{% url 'creer_colis' %}" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+                    <i class="fas fa-box-open mr-2"></i> Créer un colis
+                </a>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'inscription' %}" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+                    <i class="fas fa-box-open mr-2"></i> Créer un colis
+                </a>
+                <a href="{% url 'connexion' %}" class="bg-white hover:bg-gray-100 text-blue-900 px-6 py-3 rounded-lg font-semibold transition">
+                    <i class="fas fa-search mr-2"></i> Suivre un colis
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Services Section -->
+<section id="services" class="py-16 bg-white">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold text-center mb-12">Nos Services</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="bg-gray-50 p-6 rounded-lg shadow-md text-center">
+                <div class="text-blue-600 text-4xl mb-4">
+                    <i class="fas fa-shipping-fast"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-3">Livraison Rapide</h3>
+                <p>Livraison express de vos colis partout en ville avec des délais optimisés.</p>
+            </div>
+            
+            <div class="bg-gray-50 p-6 rounded-lg shadow-md text-center">
+                <div class="text-blue-600 text-4xl mb-4">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-3">Suivi en Temps Réel</h3>
+                <p>Suivez l'acheminement de votre colis en temps réel avec notre système de tracking.</p>
+            </div>
+            
+            <div class="bg-gray-50 p-6 rounded-lg shadow-md text-center">
+                <div class="text-blue-600 text-4xl mb-4">
+                    <i class="fas fa-headset"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-3">Support 24/7</h3>
+                <p>Notre équipe est disponible 24h/24 et 7j/7 pour répondre à vos questions.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About Section -->
+<section id="about" class="py-16 bg-gray-100">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold text-center mb-12">À propos de ColisExpress</h2>
+        <div class="max-w-3xl mx-auto text-center">
+            <p class="text-lg mb-6">
+                ColisExpress est une plateforme innovante de gestion et de livraison de colis, conçue pour répondre aux besoins des particuliers et des professionnels.
+            </p>
+            <p class="text-lg mb-6">
+                Notre mission est de simplifier le processus d'expédition et de livraison tout en garantissant rapidité, sécurité et traçabilité.
+            </p>
+            <div class="bg-blue-800 text-white p-6 rounded-lg">
+                <h3 class="text-xl font-semibold mb-3">Notre vision</h3>
+                <p>Devenir le leader de la logistique et de la livraison de colis en offrant des services innovants et accessibles à tous.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Section -->
+<section id="contact" class="py-16 bg-white">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold text-center mb-12">Contactez-nous</h2>
+        <div class="max-w-2xl mx-auto bg-gray-50 p-8 rounded-lg shadow-md">
+            <form>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="name" class="block text-gray-700 mb-2">Nom complet</label>
+                        <input type="text" id="name" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="email" class="block text-gray-700 mb-2">Email</label>
+                        <input type="email" id="email" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label for="subject" class="block text-gray-700 mb-2">Sujet</label>
+                    <input type="text" id="subject" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="mb-6">
+                    <label for="message" class="block text-gray-700 mb-2">Message</label>
+                    <textarea id="message" rows="5" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+                    Envoyer le message
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

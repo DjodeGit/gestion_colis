@@ -15,7 +15,7 @@ import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-TEMPLATE_DIR = os.path.join(BASE_DIR, 'template')
+# TEMPLATE_DIR = os.path.join(BASE_DIR, 'template')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -40,14 +40,18 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     #'colis',
     'rest_framework',
+    'rest_framework.authtoken',
     'colis.apps.ColisConfig',
     'corsheaders',
-    'drf_yasg'
+    'drf_yasg',
+    'widget_tweaks',
 ]
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
+        #'rest_framework.authentication.SessionAuthentication',
+        #'rest_framework.authentication.BasicAuthentication',
+        #'rest_framework.authentication.TokenAuthentication',
+       'rest_framework_simplejwt.authentication.JWTAuthentication', 
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -74,12 +78,21 @@ ROOT_URLCONF = 'gestion.urls'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'no-reply@colis-express.local'
 EMAIL_DESTINATAIRE_ENTREPRISE = 'medonjiojodeanas@gmail.com'
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"        # serveur SMTP de Gmail
+EMAIL_PORT = 587                     # port pour TLS
+EMAIL_USE_TLS = True                 # sécurité TLS
+EMAIL_HOST_USER = "medonjiojodeanas@gmail.com"   # ton adresse Gmail
+EMAIL_HOST_PASSWORD = "ttop kvgy oofe bbvv " # mot de passe ou mot de passe d'application
+DEFAULT_FROM_EMAIL = "medonjiojodeanas@gmail.com"
+#EMAIL_HOST_PASSWORD = "nbbg jcun iysx isat" 
 
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [TEMPLATE_DIR],
+        #'DIRS': [TEMPLATE_DIR],
+        'DIRS': [BASE_DIR/'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -141,6 +154,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -156,3 +170,12 @@ DATABASES = {
         'PORT': '5432', 
     }
 }
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=19),  # durée de vie du token d'accès
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),     # durée de vie du refresh token
+}
+
+AUTH_USER_MODEL = "colis.CustomUser"

@@ -5,4 +5,4 @@ class ColisConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'colis'
     def ready(self):
-        import colis.signals
+        from . import signals  # noqa

@@ -4,31 +4,38 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django.utils.crypto import get_random_string
 import uuid
+from django.conf import settings 
 
 # Modèle Utilisateur personnalisé (pour centraliser agents, expéditeurs, destinataires)
-class Utilisateur(AbstractUser):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    telephone = models.CharField(max_length=20, blank=True, null=True)
-    adresse = models.TextField(blank=True, null=True)
-    role = models.CharField(
-        max_length=50,
-        choices=[('agent', 'Agent'), ('expediteur', 'Expéditeur'), ('destinataire', 'Destinataire')],
-        default='agent'
+class CustomUser(AbstractUser):
+    USER_TYPE_CHOICES = (
+        ('expediteur', 'Expéditeur'),
+        ('agent', 'Agent'),
+        ('transporteur', 'Transporteur'),
+        ('admin', 'Administrateur'),
     )
-    date_creation = models.DateTimeField(default=timezone.now)
+    user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='expediteur')
+    telephone = models.CharField(max_length=20, blank=True)
+    adresse = models.TextField(blank=True)
+    email = models.EmailField(unique=True)
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+    def __str__(self):
+        return f"{self.username} ({self.get_user_type_display()})"
 
     # Add related_name to avoid clashes
     groups = models.ManyToManyField(
         'auth.Group',
-        related_name='utilisateur_set',
+        related_name='coustomuser_set',
         blank=True,
         help_text='The groups this user belongs to.',
         verbose_name='groups'
     )
     user_permissions = models.ManyToManyField(
         'auth.Permission',
-        related_name='utilisateur_permissions_set',
+        related_name='coustomuser_permissions_set',
         blank=True,
         help_text='Specific permissions for this user.',
         verbose_name='user permissions'
@@ -38,12 +45,13 @@ class Utilisateur(AbstractUser):
         return self.username
 
     class Meta:
-        verbose_name = "Utilisateur"
-        verbose_name_plural = "Utilisateurs"
+        verbose_name = "CustomUser("
+        verbose_name_plural = "CustomUser"
 
 class Expediteur(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    date_inscription = models.DateTimeField(auto_now_add=True, null=True,blank=True)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
     qr_code = models.CharField(max_length=100, unique=True, blank=True)
     date_creation = models.DateTimeField(default=timezone.now)
     telephone = models.CharField(max_length=20)
@@ -57,7 +65,7 @@ class Expediteur(models.Model):
         super().save(*args, **kwargs)
     
     def __str__(self):
-        return self.nom
+        return self.user.username
 
     class Meta:
         verbose_name = "Expéditeur"
@@ -65,13 +73,14 @@ class Expediteur(models.Model):
 
 class Destinataire(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    nom = models.CharField(max_length=100)
+    nom_complet= models.CharField(max_length=200, null=True)
     telephone = models.CharField(max_length=20)
     email = models.CharField( max_length=50)
     ville = models.CharField(max_length=50)
+    code_postal = models.CharField(max_length=10, blank=True, null=True)
     qr_code = models.CharField(max_length=100, unique=True, blank=True)
     date_creation = models.DateTimeField(default=timezone.now)
-
+    adresse = models.TextField(null=True,blank=True)
 
     def str(self):
        return self.nom
@@ -80,62 +89,8 @@ class Destinataire(models.Model):
         verbose_name = "Destinataire"
         verbose_name_plural = "Destinataires"
 
-class Colis(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    expediteur = models.ForeignKey(Expediteur, on_delete=models.CASCADE)
-    destinataire = models.ForeignKey(Destinataire, on_delete=models.CASCADE)
-    utilisateur = models.ForeignKey(User, on_delete=models.CASCADE)
-    code_suivi = models.CharField(max_length=100, unique=True)
-    adresse = models.TextField()
-    description = models.TextField(null= True)
-    poids = models.FloatField(null=True)
-    statut = models.CharField(max_length=50, choices=[
-        ('en_attente', 'En attente'),
-        ('en_transit', 'En transit'),
-        ('livré', 'Livré')
-    ])
-    date_envoi = models.DateTimeField(auto_now_add=True)
-    date_creation = models.DateTimeField(default=timezone.now)
-    def str(self):
-        return f"{self.code_suivi} - {self.destinataire} - {expediteur}"
-    class Meta:
-        verbose_name = "Colis"
-        verbose_name_plural = "Colis"
-    
-
-class Notification(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    utilisateur = models.ForeignKey(User, on_delete=models.CASCADE)
-    message = models.CharField(max_length=255)
-    date = models.DateTimeField(auto_now_add=True)
-    lu = models.BooleanField(default=False)
-
-   
-    def __str__(self):
-        return f"Notification pour {self.utilisateur.username}: {self.message[:50]}"
-
-    class Meta:
-        verbose_name = "Notification"
-        verbose_name_plural = "Notifications"
-        ordering = ['-date']  # Trier par date descendante
-
-
-class Article(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # Nouvelle clé primaire
-    titre = models.CharField(max_length=200)
-    contenu = models.TextField()
-    auteur = models.ForeignKey(Utilisateur, on_delete=models.CASCADE, related_name='articles')
-    date_publication = models.DateTimeField(default=timezone.now)
-
-    def str(self):
-        return self.titre
-    class Meta:
-        verbose_name = "Article"
-        verbose_name_plural = "Articles"
-        ordering = ['-date_publication']
-
 class Agent(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     nom_complet = models.CharField(max_length=100)
     telephone = models.CharField(max_length=20)
     zone_operation = models.CharField(max_length=100)
@@ -147,6 +102,113 @@ class Agent(models.Model):
     class Meta:
         verbose_name = "Agent"
         verbose_name_plural = "Agents"
+
+
+class Transporteur(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    entreprise = models.CharField(max_length=100, blank=True)
+    capacite = models.PositiveIntegerField(default=0)
+    est_disponible = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return self.user.username
+
+
+class Colis(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    expediteur = models.ForeignKey(Expediteur, on_delete=models.CASCADE)
+    destinataire = models.ForeignKey(Destinataire, on_delete=models.CASCADE)
+    #assigned_agent = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="colis_assignes")
+    agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, blank=True)
+    transporteur = models.ForeignKey(Transporteur, on_delete=models.SET_NULL, null=True, blank=True)
+    utilisateur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    code_suivi = models.CharField(max_length=100, unique=True)
+    adresse = models.TextField()
+    description = models.TextField(null= True)
+    poids = models.FloatField(null=True)
+    STATUT_CHOICES = (
+        ('enregistre', 'Enregistré'),
+        ('en_transit', 'En transit'),
+        ('en_livraison', 'En livraison'),
+        ('livre', 'Livré'),
+        ('probleme', 'Problème'),
+    )
+    date_envoi = models.DateTimeField(auto_now_add=True)
+    date_creation = models.DateTimeField(default=timezone.now)
+    dimensions = models.CharField(max_length=50, blank=True)
+    valeur = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    def str(self):
+        return f"{self.code_suivi} - {self.destinataire} - {expediteur}"
+    class Meta:
+        verbose_name = "Colis"
+        verbose_name_plural = "Colis"
+
+
+class Tache(models.Model):
+    colis = models.ForeignKey(Colis, on_delete=models.CASCADE)
+    transporteur = models.ForeignKey(Transporteur, on_delete=models.CASCADE)
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE)
+    date_attribution = models.DateTimeField(auto_now_add=True)
+    date_livraison_prevue = models.DateTimeField()
+    instructions = models.TextField(blank=True)
+    est_terminee = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"Tache {self.id} - {self.colis.reference}"
+
+    
+
+class Notification(models.Model):
+    class Type(models.TextChoices):
+        SYSTEM = "SYSTEM", "Système"
+        COLIS = "COLIS", "Colis"
+        LIVRAISON = "LIVRAISON", "Livraison"
+        INFO = "INFO", "Information"
+
+    class Channel(models.TextChoices):
+        IN_APP = "IN_APP", "In-app"
+        EMAIL = "EMAIL", "Email"
+        SMS = "SMS", "SMS"
+    TYPE_CHOICES = (
+        ('nouveau_colis', 'Nouveau colis'),
+        ('validation_agent', 'Validation agent'),
+        ('livraison', 'Livraison'),
+        ('autre', 'Autre'),
+    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    destinataire = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,null=True,blank=True)
+    type_notification = models.CharField(max_length=20, choices=TYPE_CHOICES, null=True,blank=True)
+    canal = models.CharField(max_length=20, choices=Channel.choices, default=Channel.IN_APP)
+    meta = models.JSONField(blank=True, null=True)  # ex: {"colis_id": 12, "code": "AB123"}
+
+    message = models.CharField(max_length=255)
+    date = models.DateTimeField(auto_now_add=True)
+    lu = models.BooleanField(default=False)
+
+   
+    def __str__(self):
+        return f"{self.get_type_notification_display()} - {self.destinataire.username}"
+
+    class Meta:
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
+        ordering = ['-date']  # Trier par date descendante
+
+
+class Article(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # Nouvelle clé primaire
+    titre = models.CharField(max_length=200)
+    contenu = models.TextField()
+    auteur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='articles')
+    date_publication = models.DateTimeField(default=timezone.now)
+
+    def str(self):
+        return self.titre
+    class Meta:
+        verbose_name = "Article"
+        verbose_name_plural = "Articles"
+        ordering = ['-date_publication']
+
     
 class Livraison(models.Model):
     id_livraison = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -201,11 +263,15 @@ class EnregistrementScan(models.Model):
 
 class DemandeInfos(models.Model):
     nom = models.CharField(max_length=150)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    auteur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="demandes_info",null=True, blank=True)
     email = models.EmailField()
     telephone = models.CharField(max_length=30)
     adresse = models.CharField(max_length=255)
     description_colis = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    reponse = models.TextField(blank=True, null=True)
+    repondu = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-created_at"]
@@ -214,3 +280,6 @@ class DemandeInfos(models.Model):
 
     def __str__(self):
         return f"{self.nom} — {self.telephone}"
+
+
+

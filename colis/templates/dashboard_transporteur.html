@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de bord - Transporteur{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Tableau de bord Transporteur</h1>
+    
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="text-blue-600 text-3xl mb-2">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <h3 class="text-xl font-semibold">{{ taches_count }}</h3>
+            <p class="text-gray-600">Tâches assignées</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="text-green-600 text-3xl mb-2">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 class="text-xl font-semibold">{{ taches_terminees_count }}</h3>
+            <p class="text-gray-600">Tâches terminées</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="text-yellow-600 text-3xl mb-2">
+                <i class="fas fa-clock"></i>
+            </div>
+            <h3 class="text-xl font-semibold">{{ taches_en_cours_count }}</h3>
+            <p class="text-gray-600">Tâches en cours</p>
+        </div>
+    </div>
+
+    <!-- Liste des tâches -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold">Mes tâches de livraison</h2>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Référence colis</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destinataire</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date livraison prévue</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for tache in taches %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-medium text-gray-900">{{ tache.colis.reference }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-gray-900">{{ tache.colis.destinataire.nom_complet }}</div>
+                            <div class="text-gray-500">{{ tache.colis.destinataire.adresse }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ tache.date_livraison_prevue|date:"d/m/Y H:i" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if tache.est_terminee %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                Terminée
+                            </span>
+                            {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                En cours
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            {% if not tache.est_terminee %}
+                            <a href="{% url 'marquer_livre' tache.colis.id %}" class="text-green-600 hover:text-green-900 mr-3">Marquer comme livré</a>
+                            {% endif %}
+                            <a href="#" class="text-blue-600 hover:text-blue-900">Détails</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            Aucune tâche de livraison assignée pour le moment.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

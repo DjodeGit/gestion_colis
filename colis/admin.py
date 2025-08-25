@@ -2,7 +2,7 @@ from django.contrib import admin
 
 # Register your models here.
 from django.contrib import admin
-from .models import Expediteur,Destinataire,Colis,Notification,Article,Agent,Livraison,EnregistrementScan,Utilisateur
+from .models import Expediteur,Destinataire,Colis,Notification,Article,Agent,Livraison,EnregistrementScan,CustomUser,Transporteur,Tache
 # Register your models here.
 admin.site.register(Expediteur)
 class ExpediteurAdmin(admin.ModelAdmin):
@@ -56,7 +56,22 @@ class ArticleAdmin(admin.ModelAdmin):
     ordering = ('date_publication',)
 
 admin.site.register(EnregistrementScan)
-admin.site.register(Utilisateur)
+@admin.register(CustomUser)
+class CustomUserAdmin(admin.ModelAdmin):
+    list_display = ['username', 'email', 'user_type', 'telephone']
+    list_filter = ['user_type']
+    search_fields = ['username', 'email']
+
+@admin.register(Transporteur)
+class TransporteurAdmin(admin.ModelAdmin):
+    list_display = ['user', 'entreprise', 'capacite', 'est_disponible']
+    list_filter = ['est_disponible']
+    search_fields = ['user__username', 'entreprise']
+@admin.register(Tache)
+class TacheAdmin(admin.ModelAdmin):
+    list_display = ['colis', 'transporteur', 'agent', 'date_livraison_prevue', 'est_terminee']
+    list_filter = ['est_terminee', 'date_attribution']
+    search_fields = ['colis__reference']
 
 
 from django.contrib import admin

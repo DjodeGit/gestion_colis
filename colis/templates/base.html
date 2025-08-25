@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ColisExpress - Gestion de Colis Professionnelle{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <!-- Navigation -->
+    <nav class="bg-blue-800 text-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <a href="{% url 'index' %}" class="text-2xl font-bold">
+                    <i class="fas fa-box mr-2"></i>ColisExpress
+                </a>
+                
+                <div class="hidden md:flex space-x-6">
+                    <a href="{% url 'index' %}" class="hover:text-blue-300 transition">
+                        <i class="fas fa-home mr-1"></i> Accueil
+                    </a>
+                    {% if user.is_authenticated %}
+                        {% if user.user_type == 'expediteur' %}
+                        <a href="{% url 'dashboard_expediteur' %}" class="hover:text-blue-300 transition">
+                            <i class="fas fa-tachometer-alt mr-1"></i> Tableau de bord
+                        </a>
+                        <a href="{% url 'creer_colis' %}" class="hover:text-blue-300 transition">
+                            <i class="fas fa-plus-circle mr-1"></i> Nouveau colis
+                        </a>
+                        {% elif user.user_type == 'agent' %}
+                        <a href="{% url 'dashboard_agent' %}" class="hover:text-blue-300 transition">
+                            <i class="fas fa-tachometer-alt mr-1"></i> Tableau de bord
+                        </a>
+                        {% elif user.user_type == 'transporteur' %}
+                        <a href="{% url 'dashboard_transporteur' %}" class="hover:text-blue-300 transition">
+                            <i class="fas fa-tachometer-alt mr-1"></i> Tableau de bord
+                        </a>
+                        {% endif %}
+                    {% endif %}
+                    <a href="#about" class="hover:text-blue-300 transition">
+                        <i class="fas fa-info-circle mr-1"></i> À propos
+                    </a>
+                    <a href="#contact" class="hover:text-blue-300 transition">
+                        <i class="fas fa-phone mr-1"></i> Contact
+                    </a>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    {% if user.is_authenticated %}
+                        <div class="hidden md:flex items-center space-x-2">
+                            <span>Bonjour, {{ user.username }}</span>
+                            <span class="bg-blue-600 px-2 py-1 rounded text-xs">{{ user.get_user_type_display }}</span>
+                        </div>
+                        <a href="{% url 'deconnexion' %}" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded transition">
+                            <i class="fas fa-sign-out-alt mr-1"></i> Déconnexion
+                        </a>
+                    {% else %}
+                        <a href="{% url 'connexion' %}" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded transition">
+                            <i class="fas fa-sign-in-alt mr-1"></i> Connexion
+                        </a>
+                        <a href="{% url 'inscription' %}" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded transition">
+                            <i class="fas fa-user-plus mr-1"></i> Inscription
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container mx-auto px-4 mt-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} bg-{% if message.tags == 'success' %}green-500{% elif message.tags == 'error' %}red-500{% else %}blue-500{% endif %} text-white p-4 rounded mb-4">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Contenu principal -->
+    <main class="flex-grow">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12 mt-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">ColisExpress</h3>
+                    <p class="mb-4">Votre partenaire de confiance pour la gestion et la livraison de colis. Rapidité, sécurité et efficacité.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-white hover:text-blue-300 transition">
+                            <i class="fab fa-facebook-f text-2xl"></i>
+                        </a>
+                        <a href="#" class="text-white hover:text-blue-300 transition">
+                            <i class="fab fa-linkedin-in text-2xl"></i>
+                        </a>
+                        <a href="#" class="text-white hover:text-blue-300 transition">
+                            <i class="fab fa-youtube text-2xl"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Contact</h3>
+                    <p class="mb-2">
+                        <i class="fas fa-map-marker-alt mr-2"></i> Yaoundé, Cameroun
+                    </p>
+                    <p class="mb-2">
+                        <i class="fas fa-phone mr-2"></i> 679590426 / 692816786
+                    </p>
+                    <p class="mb-2">
+                        <i class="fab fa-whatsapp mr-2"></i> 679590426
+                    </p>
+                    <p class="mb-2">
+                        <i class="fas fa-envelope mr-2"></i> medonjiojodeanas@gmail.com
+                    </p>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Liens rapides</h3>
+                    <ul class="space-y-2">
+                        <li><a href="{% url 'index' %}" class="hover:text-blue-300 transition">Accueil</a></li>
+                        <li><a href="#services" class="hover:text-blue-300 transition">Services</a></li>
+                        <li><a href="#about" class="hover:text-blue-300 transition">À propos</a></li>
+                        <li><a href="#contact" class="hover:text-blue-300 transition">Contact</a></li>
+                        {% if not user.is_authenticated %}
+                        <li><a href="{% url 'inscription' %}" class="hover:text-blue-300 transition">Inscription</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center">
+                <p>&copy; 2023 ColisExpress. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts JavaScript -->
+    <script>
+        // Gestion des messages Django
+        document.addEventListener('DOMContentLoaded', function() {
+            const messages = document.querySelectorAll('.alert');
+            messages.forEach(function(message) {
+                setTimeout(function() {
+                    message.style.opacity = '0';
+                    setTimeout(function() {
+                        message.style.display = 'none';
+                    }, 600);
+                }, 5000);
+            });
+        });
+    </script>
+    <!-- Dans votre base.html -->
+<script>
+// Fonction pour récupérer le token JWT du localStorage
+function getAccessToken() {
+    return localStorage.getItem('access_token');
+}
+
+// Fonction pour enregistrer le token JWT dans le localStorage
+function setAccessToken(token) {
+    localStorage.setItem('access_token', token);
+}
+
+// Fonction pour faire des requêtes API authentifiées
+async function apiRequest(url, options = {}) {
+    const token = getAccessToken();
+    
+    if (token) {
+        options.headers = {
+            ...options.headers,
+            'Authorization': `Bearer ${token}`
+        };
+    }
+    
+    const response = await fetch(url, options);
+    
+    // Si le token a expiré, essayer de le rafraîchir
+    if (response.status === 401) {
+        const refreshed = await refreshToken();
+        if (refreshed) {
+            return apiRequest(url, options);
+        }
+    }
+    
+    return response;
+}
+
+// Fonction pour rafraîchir le token
+async function refreshToken() {
+    const refreshToken = localStorage.getItem('refresh_token');
+    
+    if (!refreshToken) {
+        return false;
+    }
+    
+    try {
+        const response = await fetch('/api/token/refresh/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ refresh: refreshToken })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            setAccessToken(data.access);
+            return true;
+        }
+    } catch (error) {
+        console.error('Error refreshing token:', error);
+    }
+    
+    return false;
+}
+
+// Exemple d'utilisation pour charger les colis via API
+async function loadColis() {
+    try {
+        const response = await apiRequest('/api/colis/');
+        if (response.ok) {
+            const colis = await response.json();
+            // Traiter les données des colis
+            console.log(colis);
+        }
+    } catch (error) {
+        console.error('Error loading colis:', error);
+    }
+}
+
+// Appeler cette fonction lorsque la page est chargée
+document.addEventListener('DOMContentLoaded', function() {
+    // Charger les colis si l'utilisateur est connecté
+    if (getAccessToken()) {
+        loadColis();
+    }
+});
+</script>
+</body>
+</html>
