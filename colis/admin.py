@@ -1,5 +1,9 @@
 from django.contrib import admin
-
+from .models import Agent
+from .models import CustomUser
+from django.core.mail import send_mail
+from django.utils.crypto import get_random_string
+from django.contrib.auth.models import User, Group
 # Register your models here.
 from django.contrib import admin
 from .models import Expediteur,Destinataire,Colis,Notification,Article,Agent,Livraison,EnregistrementScan,CustomUser,Transporteur,Tache
@@ -25,12 +29,40 @@ class DestinataireAdmin(admin.ModelAdmin):
     list_filter = ('ville',)
     ordering = ('nom',)
 
-admin.site.register(Agent)
+
 class AgentAdmin(admin.ModelAdmin):
-    list_display = ('nom_complet', 'email', 'telephone', 'zone_operation')
-    search_fields = ('nom', 'email')
+    list_display = ('utilisateur','nom_complet', 'email', 'telephone', 'zone_operation')
+    search_fields = ('nom_complet', 'email')
     list_filter = ('zone_attribuee',)
-    ordering = ('nom',)
+    ordering = ('nom_complet',)
+    def save_model(self, request, obj, form, change):
+        if not obj.utilisateur:
+            # Crée un CustomUser automatiquement si pas défini
+            email = f"agent_{get_random_string(5)}@exemple.com"
+            password = get_random_string(8)  # mot de passe aléatoire
+            user = CustomUser.objects.create_user(
+                email=email,
+                password=password,
+              #  role="agent",  # si tu as un champ role
+                is_active=True
+            )
+            user.groups.add(Group.objects.get_or_create(name='Agents')[0])
+            obj.utilisateur = user
+            # Optionnel : envoyer email à l'agent avec ses identifiants
+            print(f"Agent créé : email={email}, motdepasse={password}")
+        
+
+            send_mail(
+                subject="Vos identifiants Agent",
+                message=f"Email: {email}\nMot de passe: {password}",
+                accès ="medonjiojodeanas@gmail.com",
+                from_email="no-reply@colisexpress.com",
+                recipient_list=[email],
+                fail_silently=False,
+            )
+        super().save_model(request, obj, form, change)
+
+admin.site.register(Agent, AgentAdmin)
 
 admin.site.register(Colis)
 class ColisAdmin(admin.ModelAdmin):
@@ -69,8 +101,8 @@ class TransporteurAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'entreprise']
 @admin.register(Tache)
 class TacheAdmin(admin.ModelAdmin):
-    list_display = ['colis', 'transporteur', 'agent', 'date_livraison_prevue', 'est_terminee']
-    list_filter = ['est_terminee', 'date_attribution']
+    list_display = ['colis', 'transporteur', 'agent', 'date_livraison_prevue', 'status']
+    list_filter = ['status', 'date_attribution']
     search_fields = ['colis__reference']
 
 

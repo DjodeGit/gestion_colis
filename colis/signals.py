@@ -4,6 +4,7 @@ from django.core.mail import send_mail
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import DemandeInfos
+from .models import CustomUser, Agent
 
 @receiver(post_save, sender=DemandeInfos)
 def envoyer_email_demande(sender, instance: DemandeInfos, created, **kwargs):
@@ -24,3 +25,8 @@ def envoyer_email_demande(sender, instance: DemandeInfos, created, **kwargs):
     except Exception:
         # En dev on ignore ; en prod logguer l'erreur
         pass
+
+@receiver(post_save, sender=CustomUser)
+def create_agent_for_user(sender, instance, created, **kwargs):
+    if created and instance.role == "agent":  # Si tu as un champ "role"
+        Agent.objects.create(utilisateur=instance)

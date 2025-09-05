@@ -15,15 +15,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include,re_path
+from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
-from django.contrib.auth import views as auth_views
-from colis.views import (ExpediteurViewSet, DemandeInfosViewSet, DestinataireViewSet, ColisViewSet, AgentViewSet, NotificationViewSet, 
-    ArticleViewSet,LivraisonViewSet, EnregistrementScanViewSet, AuthViewSet, TacheViewSet,AgentViewSet
-)
-                       
-                       
-                        
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -32,22 +25,29 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
+# Import des ViewSets
+from colis.views import (
+    ExpediteurViewSet, DemandeInfosViewSet, DestinataireViewSet,
+    ColisViewSet, AgentViewSet, NotificationViewSet, 
+    ArticleViewSet, LivraisonViewSet, EnregistrementScanViewSet, 
+    AuthViewSet, TacheViewSet
+)
 
+# ===================== ROUTER API =====================
 router = DefaultRouter()
-#router.register(r'user', UserViewSet)
 router.register(r'expediteurs', ExpediteurViewSet)
 router.register(r'demandes', DemandeInfosViewSet, basename='demandes')
 router.register(r'destinataires', DestinataireViewSet, basename='destinataires')
 router.register(r'colis', ColisViewSet, basename='colis')
 router.register(r'agents', AgentViewSet, basename='agents')
-router.register(r'notifications', NotificationViewSet, basename='notifications',)
+router.register(r'notifications', NotificationViewSet, basename='notifications')
 router.register(r'articles', ArticleViewSet, basename='articles')
-router.register(r'livraisons', LivraisonViewSet, basename='livraison')
+router.register(r'livraisons', LivraisonViewSet, basename='livraisons')
 router.register(r'scans', EnregistrementScanViewSet)
 router.register(r'auth', AuthViewSet, basename='auth')
-router.register(r'taches', TacheViewSet,basename='tache')
+router.register(r'taches', TacheViewSet, basename='taches')
 
-
+# ===================== DOC API =====================
 schema_view = get_schema_view(
     openapi.Info(
         title="Gestion Colis API",
@@ -58,22 +58,30 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+# ===================== URLS =====================
 urlpatterns = [
-    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    # Admin
     path('admin/', admin.site.urls),
-    path('', include('colis.urls')), 
+
+    # Documentation
+    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+
+    # Auth DRF
     path('api-auth/', include('rest_framework.urls')),
-    path('api/', include(router.urls)),  # Routes pour les APIs CRUD 
-     # Obtenir un token avec login et mot de passe
+
+    # JWT Token
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    
-    # Rafraîchir un token expiré
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path("", include("colis.urls")),    # <- ajoute ça
-    path("api/", include("colis.urls")),  # selon ton organisation actuelle
+
+    # API CRUD (DRF router)
+    path('api/', include(router.urls)),
+
+    # Routes HTML (connexion, inscription, dashboards…)
+    path('', include('colis.urls')),
 ]
+
 
 
 

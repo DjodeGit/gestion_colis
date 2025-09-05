@@ -1,0 +1,19 @@
+<h2>Liste des Agents</h2>
+<a href="{% url 'creer_agent' %}">Créer un Agent</a>
+<table>
+    <tr>
+        <th>Nom</th>
+        <th>Téléphone</th>
+        <th>Actions</th>
+    </tr>
+    {% for agent in agents %}
+    <tr>
+        <td>{{ agent.nom_complet}}</td>
+        <td>{{ agent.telephone }}</td>
+        <td>
+            <a href="{% url 'modifier_agent' agent.id %}">Modifier</a>
+            <a href="{% url 'supprimer_agent' agent.id %}">Supprimer</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>

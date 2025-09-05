@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}Détails du colis{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto p-6 bg-white shadow-md rounded-lg mt-8">
+    <h2 class="text-2xl font-bold mb-4">Détails du colis</h2>
+    <p><strong>Référence :</strong> {{ colis.reference }}</p>
+    <p><strong>Destinataire :</strong> {{ colis.destinataire.nom_complet }}</p>
+    <p><strong>Adresse :</strong> {{ colis.destinataire.adresse }}</p>
+    <p><strong>Ville :</strong> {{ colis.destinataire.ville }}</p>
+    <p><strong>Statut :</strong> {{ colis.statut }}</p>
+    <p><strong>Date de création :</strong> {{ colis.date_creation|date:"d/m/Y H:i" }}</p>
+    <a href="{% url 'dashboard_expediteur' %}" class="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded-lg">Retour</a>
+</div>
+{% endblock %}

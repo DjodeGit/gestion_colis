@@ -83,7 +83,7 @@ EMAIL_HOST = "smtp.gmail.com"        # serveur SMTP de Gmail
 EMAIL_PORT = 587                     # port pour TLS
 EMAIL_USE_TLS = True                 # sécurité TLS
 EMAIL_HOST_USER = "medonjiojodeanas@gmail.com"   # ton adresse Gmail
-EMAIL_HOST_PASSWORD = "ttop kvgy oofe bbvv " # mot de passe ou mot de passe d'application
+EMAIL_HOST_PASSWORD = "tlrx crhv cnjj zoxv " # mot de passe ou mot de passe d'application
 DEFAULT_FROM_EMAIL = "medonjiojodeanas@gmail.com"
 #EMAIL_HOST_PASSWORD = "nbbg jcun iysx isat" 
 
@@ -179,3 +179,9 @@ SIMPLE_JWT = {
 }
 
 AUTH_USER_MODEL = "colis.CustomUser"
+
+# Backend pour login par email
+AUTHENTICATION_BACKENDS = [
+    'colis.authentication.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]

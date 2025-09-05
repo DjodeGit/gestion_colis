@@ -278,3 +278,38 @@ document.getElementById("colisForm")?.addEventListener("submit", async (e) => {
     alert("Erreur ajout colis ❌");
   }
 });
+
+
+document.getElementById('contact-form').addEventListener('submit', async function(event) {
+    event.preventDefault(); // Empêche le rechargement de la page
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        subject: formData.get('subject'),
+        message: formData.get('message')
+    };
+
+    try {
+        const response = await fetch('http://localhost:3000/send-email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        const messageDiv = document.getElementById('form-message');
+        if (response.ok) {
+            messageDiv.innerHTML = '<p class="text-green-600">Message envoyé avec succès !</p>';
+            form.reset(); // Réinitialise le formulaire
+        } else {
+            messageDiv.innerHTML = '<p class="text-red-600">Erreur lors de l\'envoi du message : ' + result.error + '</p>';
+        }
+    } catch (error) {
+        document.getElementById('form-message').innerHTML = '<p class="text-red-600">Erreur : ' + error.message + '</p>';
+    }
+});
