@@ -29,7 +29,15 @@ class CustomUser(AbstractUser):
         ("transporteur", "Transporteur"),
         ("admin", "Administrateur"),
     )
-
+    role = models.CharField(  # Ajout du champ manquant
+        max_length=50,
+        choices=[
+            ('agent', 'Agent'),
+            ('expediteur', 'Expéditeur'),
+            ('destinataire', 'Destinataire')
+        ],
+        default='expediteur'
+    )
     user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default="expediteur")
     telephone = models.CharField(max_length=20, blank=True)
     adresse = models.TextField(blank=True)
@@ -177,7 +185,7 @@ class Colis(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.code_suivi}"
+        return f"Colis {self.id} - {self.destinataire}"
 
     class Meta:
         verbose_name = "Colis"

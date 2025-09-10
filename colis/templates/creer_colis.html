@@ -10,7 +10,7 @@
     <div class="bg-white rounded-lg shadow-md p-6">
         <form method="post" class="space-y-6">
             {% csrf_token %}
-            {{ form.as_p }}
+            
             <div class="border-b border-gray-200 pb-4">
                 <h2 class="text-xl font-semibold text-blue-800 mb-4">
                     <i class="fas fa-user mr-2"></i> Informations du destinataire
@@ -77,9 +77,9 @@
                     
                     <div>
                         <label for="prix" class="block text-gray-700 mb-2">Prix automatique (FCFA)</label>
-                        <input type="text" id="prix" name="prix" readonly 
-                            class="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                            placeholder="Le prix s'affichera ici">
+                        <input type="text" id="prix" readonly
+                            class="w-full px-4 py-2 border rounded-lg bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Le prix s'affichera ici après saisie du poids">
                     </div>
 
                 </div>
@@ -113,9 +113,22 @@
         <script>
             // Fonction de calcul du prix selon le poids
             function calculerPrix() {
-                let poids = parseFloat(document.getElementById("id_poids").value);
+                let poidsInput = document.getElementById("id_poids");
+                let prixInput = document.getElementById("prix");
+                
+                // Vérification des éléments (pour éviter les erreurs)
+                if (!poidsInput) {
+                    console.error("Erreur : Champ poids (id_poids) non trouvé ! Vérifiez le formulaire Django.");
+                    return;
+                }
+                if (!prixInput) {
+                    console.error("Erreur : Champ prix (id_prix) non trouvé !");
+                    return;
+                }
+                
+                let poids = parseFloat(poidsInput.value.replace(",", ".")); // Gère les virgules si l'utilisateur en met
                 let prix = 0;
-
+                
                 if (!isNaN(poids) && poids > 0) {
                     if (poids <= 1) {
                         prix = 2000;
@@ -127,15 +140,35 @@
                         prix = 12000;
                     }
                 }
-
-                // Met le résultat dans le champ prix
-                document.getElementById("prix").value = prix > 0 ? prix + " FCFA" : "";
+                
+                // Mise à jour du champ avec formatage
+                if (prix > 0) {
+                    prixInput.value = prix.toLocaleString() + " FCFA"; // Ajoute des espaces pour milliers (ex: 12 000 FCFA)
+                    prixInput.style.backgroundColor = "#d4edda"; // Fond vert clair pour indiquer succès (optionnel)
+                    prixInput.style.color = "#155724";
+                } else {
+                    prixInput.value = "";
+                    prixInput.style.backgroundColor = ""; // Reset
+                    prixInput.style.color = "";
+                }
             }
 
-            // Détecte quand on tape dans le champ poids
-            document.getElementById("id_poids").addEventListener("input", calculerPrix);
+            // Attendre que le DOM soit chargé, puis attacher l'événement
+            document.addEventListener("DOMContentLoaded", function() {
+                let poidsField = document.getElementById("id_poids");
+                if (poidsField) {
+                    // Écouteur pour saisie en temps réel
+                    poidsField.addEventListener("input", calculerPrix);
+                    // Écouteur pour changements via flèches (type number)
+                    poidsField.addEventListener("change", calculerPrix);
+                    // Appel initial pour pré-remplissage
+                    calculerPrix();
+                    console.log("JS initialisé : Écouteur attaché au champ poids."); // Pour debug
+                } else {
+                    console.error("Erreur critique : id_poids non trouvé au chargement !");
+                }
+            });
         </script>
-
     </div>
 </div>
 {% endblock %}

@@ -4,6 +4,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse, HttpResponseForbidden
 from django.utils import timezone
 from functools import wraps
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from django.core.mail import send_mail   # <<< AJOUTER CETTE LIGNE
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
@@ -12,6 +14,13 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated,IsAdminUser
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import api_view, permission_classes
+from django.db.models import Count, Sum
+from django.contrib.auth.models import Group
+from django.contrib.admin.views.decorators import staff_member_required
+from django.urls import reverse_lazy
+from django.contrib.auth.views import LoginView
+import secrets
+import string
 
 from .models import (
     CustomUser, Expediteur, Agent, Transporteur, Destinataire, Colis,
@@ -28,7 +37,7 @@ from .serializers import (
     NotificationSerializer, ArticleSerializer, LivraisonSerializer, TacheSerializer,TransporteurSerializer
 )
 from .forms import (
-    InscriptionExpediteurForm, ConnexionForm, DestinataireForm, ColisForm,ContactForm
+    InscriptionExpediteurForm, ConnexionForm, DestinataireForm, ColisForm,ContactForm,AgentRegistrationForm
 )
 
 # =====================================
@@ -278,7 +287,7 @@ class LoginAPIView(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
-
+        user.backend = 'django.contrib.auth.backends.ModelBackend'
         refresh = RefreshToken.for_user(user)
 
         # Déterminer le rôle
@@ -315,6 +324,7 @@ def inscription(request):
     form = InscriptionExpediteurForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         user = form.save()
+        user.backend = 'django.contrib.auth.backends.ModelBackend'
         login(request, user)
         return redirect('dashboard_expediteur')
     return render(request, 'inscription.html', {'form': form})
@@ -338,9 +348,14 @@ def deconnexion(request):
     return redirect('index')
 
 @login_required
-@user_type_required('expediteur')
 def dashboard_expediteur(request):
-    colis = Colis.objects.filter(expediteur=request.user.expediteur)
+    try:
+        expediteur = request.user.expediteur
+    except AttributeError:
+        messages.error(request, "Vous n'avez pas de profil expéditeur. Contactez l'administrateur.")
+        return redirect('index')
+    
+    colis = Colis.objects.filter(expediteur=expediteur)
     context = {
         'colis': colis,
         'colis_count': colis.count(),
@@ -353,10 +368,46 @@ def dashboard_expediteur(request):
 @login_required
 @user_type_required('agent')
 def dashboard_agent(request):
-    colis = Colis.objects.filter(agent=request.user.agent)
-    transporteurs = Transporteur.objects.all()
-    return render(request, 'dashboard_agent.html', {'colis': colis, 'transporteurs': transporteurs})
-
+    if not request.user.groups.filter(name='Agents').exists():
+        messages.error(request, "Accès réservé aux agents.")
+        return redirect('index')
+    
+    # Gestion POST pour marquer livré
+    if request.method == 'POST':
+        colis_id = request.POST.get('id_colis')
+        if colis_id:  # Vérifie que colis_id existe
+            try:
+                Colis.objects.filter(agent__user=request.user)
+                colis.statut = 'livre'
+                colis.save()
+                messages.success(request, f"Colis {colis.code_suivi} marqué comme livré.")
+            except Colis.DoesNotExist:
+               messages.error(request, "Colis non trouvé ou non assigné à vous.")
+        else:
+            messages.error(request, "Aucun colis spécifié.")
+        return redirect('dashboard_agent')
+        
+    
+    # Liste des colis et stats
+    colis = Colis.objects.filter(agent__user=request.user)
+    colis_count = colis.count()
+    colis_livres_count = colis.filter(statut='livre').count()
+    colis_transit_count = colis.filter(statut='en_transit').count()
+    colis_probleme_count = colis.filter(statut='probleme').count()
+    
+    # Transporteurs (basé sur ton modèle)
+    transporteurs = Transporteur.objects.all()  # Ajuste si filtrage nécessaire
+    
+    context = {
+        'titre': 'Dashboard Agent - ColisExpress',
+        'colis': colis,
+        'colis_count': colis_count,
+        'colis_livres_count': colis_livres_count,
+        'colis_transit_count': colis_transit_count,
+        'colis_probleme_count': colis_probleme_count,
+        'transporteurs': transporteurs,
+    }
+    return render(request, 'dashboard_agent.html', context)
 @login_required
 @user_type_required('transporteur')
 def dashboard_transporteur(request):
@@ -560,3 +611,184 @@ def supprimer_agent(request, pk):
         agent.delete()
         return redirect("liste_agents")
     return render(request, "dashboard/supprimer_agent.html", {"agent": agent})
+
+
+
+def creer_colis(request):
+    # Initialisez les forms pour GET (affichage vide)
+    destinataire_form = DestinataireForm()
+    colis_form = ColisForm()
+    
+    if request.method == 'POST':
+        # Liez les forms aux données POST
+        destinataire_form = DestinataireForm(request.POST)
+        colis_form = ColisForm(request.POST)
+        
+        if destinataire_form.is_valid() and colis_form.is_valid():
+            # Calculez le prix côté serveur (pour sécurité, comme discuté précédemment)
+            colis = colis_form.save(commit=False)
+            poids = colis.poids  # Assurez-vous que 'poids' est un champ du modèle Colis
+            if poids and poids > 0:
+                if poids <= 1:
+                    colis.prix = 2000
+                elif poids <= 5:
+                    colis.prix = 5000
+                elif poids <= 10:
+                    colis.prix = 8000
+                else:
+                    colis.prix = 12000
+            colis.save()
+            
+            # Sauvegardez le destinataire (ajustez si lié au colis)
+            destinataire = destinataire_form.save()
+            # Liez-les si nécessaire, ex. : colis.destinataire = destinataire; colis.save()
+            
+            # Redirigez après succès (ex. : vers dashboard)
+            return redirect('dashboard_expediteur')  # Ajustez l'URL name
+        
+        # Si invalid, continuez pour re-rendre avec erreurs
+    
+    # TOUJOURS retourner un render ici (pour GET et POST invalide)
+    # Passez les forms au template (et supprimez 'form' si vous n'en avez pas besoin, pour éviter doublons)
+    return render(request, 'creer_colis.html', {  # Ajustez le nom du template si différent
+        'destinataire_form': destinataire_form,
+        'colis_form': colis_form,
+        # 'form': some_global_form,  # Commentez ou supprimez si vous rendez manuellement
+    })
+
+
+    # Fonction pour vérifier si l'utilisateur est admin (on l'utilisera plus tard)
+def is_admin(user):
+    return user.is_superuser
+
+@user_passes_test(is_admin)
+def dashboard_admin(request):
+    # Statistiques globales
+    nombre_colis_total = Colis.objects.count()  # Total colis
+    chiffre_affaires = Colis.objects.aggregate(total=Sum('prix'))['total'] or 0  # Somme des prix (0 si aucun)
+    User = get_user_model()
+    nombre_utilisateurs = User.objects.filter(is_active=True).count()  # Utilisateurs actifs
+    
+
+    # Taux de livraison (ex. : % de colis avec statut 'LIVRE' – adapte si ton statut diffère)
+    colis_livres = Colis.objects.filter(statut='LIVRE').count()  # Assumes statut='LIVRE'
+    taux_livraison = (colis_livres / nombre_colis_total * 100) if nombre_colis_total > 0 else 0
+    
+    # Colis récents (ex. : 10 derniers, pour la liste – on l'ajoutera au template après)
+    colis_recents = Colis.objects.order_by('-date_creation')[:10]  # Assumes date_creation field
+    
+    # Gestion des agents (nouvelle stat)
+    try:
+        agents = get_user_model().objects.filter(groups__name='Agents').order_by('-date_joined')[:10]  # 10 derniers agents
+        nombre_agents = agents.count()
+    except Exception as e:
+        print(f"Erreur agents: {e}")
+        agents = []
+        nombre_agents = 0
+
+    context = {
+        'titre': 'Dashboard Administrateur - ColisExpress',
+        'nombre_colis': nombre_colis_total,
+        'chiffre_affaires': f"{chiffre_affaires:,.0f} FCFA" if chiffre_affaires else "0 FCFA",  # Formatage avec virgules
+        'nombre_utilisateurs': nombre_utilisateurs,
+        'taux_livraison': f"{taux_livraison:.1f}%",  # 1 décimale
+        'colis_recents': colis_recents,  # Pour la liste (on l'utilisera dans le template)
+        'agents': agents,
+        'nombre_agents': nombre_agents,
+    }
+    return render(request, 'dashboard_admin.html', context)
+
+@staff_member_required  # Restreint aux admins (is_staff=True)
+@staff_member_required
+def inscrire_agent(request):
+    if request.method == 'POST':
+        form = AgentRegistrationForm(request.POST)
+        if form.is_valid():
+            try:
+                User = get_user_model()
+                # Génère mot de passe sécurisé avec secrets
+                alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+                password = ''.join(secrets.choice(alphabet) for i in range(12))
+                
+                # Crée l'utilisateur (create_user hashe le password)
+                user = User.objects.create_user(
+                    username=form.cleaned_data['username'],
+                    first_name=form.cleaned_data['first_name'],
+                    last_name=form.cleaned_data['last_name'],
+                    email=form.cleaned_data['email'],
+                    password=password,
+                )
+                
+                # Ajoute au groupe Agents
+                group, _ = Group.objects.get_or_create(name='Agents')
+                user.groups.add(group)
+                
+                # Crée le profil Agent
+                Agent.objects.create(
+                    user=user,
+                    telephone=form.cleaned_data['telephone'],
+                    zone_operation=form.cleaned_data['zone_operation'],
+                    zone_attribuee=form.cleaned_data['zone_attribuee'],
+                )
+                
+                # Envoi email
+                subject = 'Bienvenue - Compte Agent ColisExpress'
+                message = f"""
+Bonjour {user.first_name} {user.last_name},
+
+Votre compte agent a été créé.
+- Nom d'utilisateur : {user.username}
+- Mot de passe temporaire : {password}
+- Email : {user.email}
+- Téléphone : {form.cleaned_data['telephone']}
+- Zone d'opération : {form.cleaned_data['zone_operation']}
+- Zone attribuée : {form.cleaned_data['zone_attribuee']}
+
+Connectez-vous à /login/ et changez votre mot de passe.
+
+Cordialement,
+ColisExpress
+                """
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL or 'admin@colisexpress.com',
+                    [user.email],
+                    fail_silently=True,
+                )
+                messages.success(request, f"Agent {user.username} créé avec succès !")
+                return redirect('dashboard_admin')
+            except Exception as e:
+                messages.error(request, f"Erreur lors de la création : {str(e)}")
+                print(f"Debug erreur : {e}")  # Logs pour debug
+        else:
+            messages.error(request, "Formulaire invalide. Vérifiez les champs.")
+    else:
+        form = AgentRegistrationForm()
+    
+    return render(request, 'inscrire_agent.html', {'form': form})
+
+
+class CustomLoginView(LoginView):
+    template_name = 'connexion.html'
+
+    def get_success_url(self):
+        user = self.request.user
+        if user.is_authenticated:
+            if user.is_staff:
+                return reverse_lazy('dashboard_admin')
+            elif user.groups.filter(name='Agents').exists():
+                return reverse_lazy('dashboard_agent')
+            elif user.groups.filter(name='transporteur').exists():
+                return reverse_lazy('dashboard_transporteur')
+            elif user.groups.filter(name='expediteur').exists():  # Ajoute groupe explicite
+                try:
+                    user.expediteur
+                    return reverse_lazy('dashboard_expediteur')
+                except AttributeError:
+                    messages.error(self.request, "Vous n'avez pas de profil expéditeur.")
+                    return reverse_lazy('index')
+            else:
+                messages.error(self.request, "Aucun rôle défini pour cet utilisateur.")
+                return reverse_lazy('index')
+        return super().get_success_url()

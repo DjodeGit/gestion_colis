@@ -10,13 +10,13 @@ from django.contrib.auth import views as auth_views
 from .views import (
     InscriptionExpediteurAPIView,
     index, inscription, connexion, deconnexion,
-    dashboard_expediteur, dashboard_agent, dashboard_transporteur,
+    dashboard_expediteur, dashboard_agent, dashboard_transporteur,dashboard_admin,
     creer_colis, attribuer_transporteur, marquer_livre, creer_agent,
     api_colis_list, api_colis_detail,
     ExpediteurViewSet, DestinataireViewSet, ColisViewSet,
     AgentViewSet, EnregistrementScanViewSet, ScanAPIView, ArticleViewSet,
     NotificationViewSet, LivraisonViewSet, DemandeInfosViewSet, TacheViewSet,
-    AuthViewSet,contact_view, LoginAPIView,tache_form,TransporteurViewSet
+    AuthViewSet,contact_view, LoginAPIView,tache_form,TransporteurViewSet,CustomLoginView
 )
 
 # ===================== ROUTER API =====================
@@ -58,10 +58,13 @@ urlpatterns = [
     path('dashboard/expediteur/', dashboard_expediteur, name='dashboard_expediteur'),
     path('dashboard/agent/', dashboard_agent, name='dashboard_agent'),
     path('dashboard/transporteur/', dashboard_transporteur, name='dashboard_transporteur'),
-
+    path('dashboard/', dashboard_admin, name='dashboard_admin'),
+    path('inscrire-agent/', views.inscrire_agent, name='inscrire_agent'),
+   path('connexion1/', CustomLoginView.as_view(), name='connexion1'),
     # Gestion des colis
     path('colis/creer/', creer_colis, name='creer_colis'),
-    path('colis/<int:colis_id>/attribuer-transporteur/', attribuer_transporteur, name='attribuer_transporteur'),
+    re_path(r'^colis/(?P<colis_id>[0-9a-f-]+)/attribuer-transporteur/$', attribuer_transporteur, name='attribuer_transporteur'),
+    # Ajoute autres URLs si nécessaire
     path('colis/<int:colis_id>/marquer-livre/', marquer_livre, name='marquer_livre'),
     path("colis/<uuid:pk>/details/", views.details_colis, name="details_colis"),
     path("colis/<uuid:pk>/supprimer/", views.supprimer_colis, name="supprimer_colis"),

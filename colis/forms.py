@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import CustomUser, Expediteur, Agent, Transporteur, Destinataire, Colis
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 
 class InscriptionExpediteurForm(UserCreationForm):
     email = forms.EmailField(required=True)
@@ -113,3 +114,37 @@ class AgentUpdateForm(forms.ModelForm):
     class Meta:
         model = Agent
         fields = ['nom_complet', 'telephone']
+
+User = get_user_model()
+
+class AgentRegistrationForm(forms.Form):
+    password = forms.CharField(widget=forms.HiddenInput(), required=False)  # Pas visible, généré
+    username = forms.CharField(max_length=150, required=True)
+    first_name = forms.CharField(max_length=150, required=False)
+    last_name = forms.CharField(max_length=150, required=False)
+    email = forms.EmailField(required=True)
+    telephone = forms.CharField(max_length=20, required=False)  # Nouveau
+    zone_operation = forms.CharField(max_length=100, required=False)  # Nouveau
+    zone_attribuee = forms.CharField(max_length=100, required=False)  # Nouveau
+    class Meta:
+        model = User  # Pointe vers CustomUser
+        model = Agent
+        fields = ['username', 'first_name', 'last_name', 'email','telephone', 'zone_attribuee', 'zone_operation']
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        # Génère un mot de passe aléatoire (12 caractères)
+        from django.contrib.auth.hashers import make_password
+        import secrets
+        import string
+        alphabet = string.ascii_letters + string.digits + string.punctuation
+        password = ''.join(secrets.choice(alphabet) for i in range(12))
+        user.set_password(password)
+        user.is_staff = False  # Pas admin
+        user.is_superuser = False
+        if commit:
+            user.save()
+            # Ajoute au groupe 'Agents' (crée si pas existant)
+            group, created = Group.objects.get_or_create(name='Agents')
+            user.groups.add(group)
+        return user, password  # Retourne pour email

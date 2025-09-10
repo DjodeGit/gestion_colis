@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ titre }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8 text-blue-800">
+        <i class="fas fa-tachometer-alt mr-2"></i> Dashboard Administrateur
+    </h1>
+    
+    <!-- Statistiques globales (pas de boucle ici) -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6 text-center">
+            <i class="fas fa-box text-4xl text-blue-600 mb-4"></i>
+            <h3 class="text-xl font-semibold mb-2">Colis totaux</h3>
+            <p class="text-3xl font-bold text-gray-800">{{ nombre_colis }}</p> <!-- Remplacer par variable plus tard -->
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 text-center">
+            <i class="fas fa-dollar-sign text-4xl text-green-600 mb-4"></i>
+            <h3 class="text-xl font-semibold mb-2">Chiffre d'affaires</h3>
+            <p class="text-3xl font-bold text-gray-800">{{ chiffre_affaires }}</p>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 text-center">
+            <i class="fas fa-users text-4xl text-purple-600 mb-4"></i>
+            <h3 class="text-xl font-semibold mb-2">Utilisateurs</h3>
+            <p class="text-3xl font-bold text-gray-800">{{ nombre_utilisateurs }}</p>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-6 text-center">
+            <i class="fas fa-check-circle text-4xl text-green-600 mb-4"></i>
+            <h3 class="text-xl font-semibold mb-2">Taux de livraison</h3>
+            <p class="text-3xl font-bold text-gray-800">{{ taux_livraison }}</p>
+        </div>
+    </div>
+    
+    <!-- Colis récents (pas de boucle ici – message statique) -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-2xl font-semibold mb-4 text-blue-800">
+            <i class="fas fa-boxes mr-2"></i> Colis récents
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full table-auto border-collapse border border-gray-300">
+                <thead>
+                    <tr class="bg-gray-200 text-left">
+                        <th class="border border-gray-300 px-4 py-2">ID</th>
+                        <th class="border border-gray-300 px-4 py-2">Expéditeur</th>
+                        <th class="border border-gray-300 px-4 py-2">Destinataire</th>
+                        <th class="border border-gray-300 px-4 py-2">Poids (kg)</th>
+                        <th class="border border-gray-300 px-4 py-2">Prix (FCFA)</th>
+                        <th class="border border-gray-300 px-4 py-2">Statut</th>
+                        <th class="border border-gray-300 px-4 py-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if colis_recents %}
+                        {% for colis in colis_recents %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="border border-gray-300 px-4 py-2">{{ colis.id }}</td>
+                            <td class="border border-gray-300 px-4 py-2">{{ colis.expediteur.nom_complet|default:"N/A" }}</td>  <!-- Assumes champ expediteur avec nom_complet -->
+                            <td class="border border-gray-300 px-4 py-2">{{ colis.destinataire.nom_complet|default:"N/A" }}</td>  <!-- Assumes destinataire -->
+                            <td class="border border-gray-300 px-4 py-2">{{ colis.poids }} kg</td>
+                            <td class="border border-gray-300 px-4 py-2">{{ colis.prix }} FCFA</td>
+                            <td class="border border-gray-300 px-4 py-2">
+                                <span class="px-2 py-1 rounded text-sm {% if colis.statut == 'LIVRE' %}bg-green-200 text-green-800{% else %}bg-yellow-200 text-yellow-800{% endif %}">
+                                    {{ colis.statut }}
+                                </span>
+                            </td>
+                            <td class="border border-gray-300 px-4 py-2">
+                                <a href="#" class="text-blue-500 hover:underline">Détails</a>  <!-- Lien vers détail plus tard -->
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td class="border border-gray-300 px-4 py-2" colspan="7">Aucun colis pour l'instant.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!-- Section Gestion des agents (nouvelle) -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-2xl font-semibold mb-4 text-blue-800">
+            <i class="fas fa-users mr-2"></i> Agents récents ({{ nombre_agents }} total)
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full table-auto border-collapse border border-gray-300">
+                <thead>
+                    <tr class="bg-gray-200 text-left">
+                        <th class="border border-gray-300 px-4 py-2">Nom</th>
+                        <th class="border border-gray-300 px-4 py-2">Email</th>
+                        <th class="border border-gray-300 px-4 py-2">Date d'inscription</th>
+                        <th class="border border-gray-300 px-4 py-2">Actif</th>
+                        <th class="border border-gray-300 px-4 py-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if agents %}
+                        {% for agent in agents %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="border border-gray-300 px-4 py-2">{{ agent.first_name }} {{ agent.last_name }}</td>
+                            <td class="border border-gray-300 px-4 py-2">{{ agent.email }}</td>
+                            <td class="border border-gray-300 px-4 py-2">{{ agent.date_joined|date:"d/m/Y" }}</td>
+                            <td class="border border-gray-300 px-4 py-2">
+                                <span class="px-2 py-1 rounded text-sm {% if agent.is_active %}bg-green-200 text-green-800{% else %}bg-red-200 text-red-800{% endif %}">
+                                    {% if agent.is_active %}Actif{% else %}Inactif{% endif %}
+                                </span>
+                            </td>
+                            <td class="border border-gray-300 px-4 py-2">
+                                <a href="#" class="text-blue-500 hover:underline mr-2">Détails</a>
+                                {% if agent.is_active %}
+                                    <a href="#" class="text-red-500 hover:underline" onclick="return confirm('Désactiver cet agent ?')">Désactiver</a>
+                                {% else %}
+                                    <a href="#" class="text-green-500 hover:underline">Activer</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td class="border border-gray-300 px-4 py-2" colspan="5">Aucun agent pour l'instant. <a href="{% url 'inscrire_agent' %}" class="text-blue-500">Inscrire le premier</a></td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Actions rapides -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-semibold mb-4 text-blue-800">
+            <i class="fas fa-tools mr-2"></i> Actions rapides
+        </h2>
+      <p class="text-gray-500">Inscrire un agent (à implémenter)</p>.
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Inscrire un agent - ColisExpress{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8 text-blue-800">Inscrire un nouvel agent</h1>
+    <div class="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">  <!-- Augmenté max-w pour plus d'espace -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 p-4 rounded {% if message.tags == 'success' %}bg-green-100 text-green-700 border border-green-300{% else %}bg-red-100 text-red-700 border border-red-300{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        <form method="post" class="space-y-6">  <!-- Augmenté space-y pour plus d'espace vertical -->
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">  <!-- gap-6 pour plus d'espace entre colonnes -->
+                <!-- Colonne 1 -->
+                <div>
+                    <label for="{{ form.username.id_for_label }}" class="block text-gray-700 font-medium mb-2">Nom d'utilisateur <span class="text-red-500">*</span></label>
+                    {% render_field form.username class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ex: agent123" %}
+                    {% if form.username.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.username.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.first_name.id_for_label }}" class="block text-gray-700 font-medium mb-2">Prénom</label>
+                    {% render_field form.first_name class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ex: Jean" %}
+                    {% if form.first_name.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.first_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.last_name.id_for_label }}" class="block text-gray-700 font-medium mb-2">Nom de famille</label>
+                    {% render_field form.last_name class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ex: Dupont" %}
+                    {% if form.last_name.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.last_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="block text-gray-700 font-medium mb-2">Email <span class="text-red-500">*</span></label>
+                    {% render_field form.email class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ex: agent@example.com" %}
+                    {% if form.email.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.email.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.telephone.id_for_label }}" class="block text-gray-700 font-medium mb-2">Téléphone</label>
+                    {% render_field form.telephone class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ex: +237 6 99 12 34 56" %}
+                    {% if form.telephone.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.telephone.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.zone_operation.id_for_label }}" class="block text-gray-700 font-medium mb-2">Zone d'opération</label>
+                    {% render_field form.zone_operation class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ex: Nord du Cameroun" %}
+                    {% if form.zone_operation.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.zone_operation.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div class="md:col-span-1">  <!-- Force pleine largeur sur mobile pour le dernier champ -->
+                    <label for="{{ form.zone_attribuee.id_for_label }}" class="block text-gray-700 font-medium mb-2">Zone attribuée</label>
+                    {% render_field form.zone_attribuee class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ex: Yaoundé Centre" %}
+                    {% if form.zone_attribuee.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.zone_attribuee.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200">  <!-- Bordure pour séparer boutons -->
+                <a href="{% url 'dashboard_admin' %}" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition">
+                    Annuler
+                </a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition">
+                    <i class="fas fa-user-plus mr-2"></i> Créer l'agent
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
