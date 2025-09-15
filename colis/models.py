@@ -140,7 +140,6 @@ class Transporteur(models.Model):
     nom = models.CharField(max_length=100, null=True,blank=True)
     telephone = models.PositiveIntegerField(null=True, blank=True)
     vehicule = models.CharField(max_length=100, null=True, blank=True)
-    matricule = models.CharField(max_length=100, null=True, blank=True)
     email = models.EmailField(max_length=254, null=True, blank=True)
     def __str__(self):
         return f"Transporteur - {self.user.email}"

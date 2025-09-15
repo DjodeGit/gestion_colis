@@ -77,31 +77,40 @@ class ColisViewSet(viewsets.ModelViewSet):
 
 
     @action(detail=True, methods=['post'])
-    def attribuer_transporteur(self, request, pk=None):
-        colis = self.get_object()
-        transporteur_id = request.data.get('transporteur_id')
-        date_livraison_prevue = request.data.get('date_livraison_prevue')
-        try:
-            transporteur = Transporteur.objects.get(id=transporteur_id)
-            colis.transporteur = transporteur
-            colis.date_livraison_prevue = date_livraison_prevue
-            colis.statut = 'en_transit'
-            colis.save()
-
-            Tache.objects.create(
-                colis=colis,
-                transporteur=transporteur,
-                agent=colis.agent,
-                date_livraison_prevue=date_livraison_prevue
-            )
-            Notification.objects.create(
-                destinataire=transporteur.user,
-                type_notification='nouveau_colis',
-                message=f"Nouveau colis {colis.reference} à livrer"
-            )
-            return Response({'status': 'Transporteur attribué'})
-        except Transporteur.DoesNotExist:
-            return Response({'error': 'Transporteur non trouvé'}, status=status.HTTP_400_BAD_REQUEST)
+    @login_required
+    def attribuer_transporteur(request, colis_id):
+        if not request.user.groups.filter(name='Agents').exists():
+            messages.error(request, "Accès réservé aux agents.")
+            return redirect('index')
+        
+        colis = get_object_or_404(Colis, id=colis_id, agent__user=request.user)
+        
+        if request.method == 'POST':
+            transporteur_id = request.POST.get('transporteur_id')
+            if transporteur_id:
+                try:
+                    transporteur = Transporteur.objects.get(id=transporteur_id)
+                    if transporteur.est_disponible:
+                        colis.transporteur = transporteur
+                        colis.statut = 'en_transit'  # Met à jour le statut
+                        colis.save()
+                        messages.success(request, f"Colis {colis.code_suivi} attribué à {transporteur.user.username}.")
+                    else:
+                        messages.error(request, "Ce transporteur n'est pas disponible.")
+                except Transporteur.DoesNotExist:
+                    messages.error(request, "Transporteur non trouvé.")
+            else:
+                messages.error(request, "Aucun transporteur sélectionné.")
+            return redirect('dashboard_agent')
+        
+        # GET : Afficher le formulaire
+        transporteurs = Transporteur.objects.filter(est_disponible=True)
+        context = {
+            'titre': 'Attribuer Transporteur - ColisExpress',
+            'colis': colis,
+            'transporteurs': transporteurs,
+        }
+        return render(request, 'attribuer_transporteur.html', context)
 
     @action(detail=True, methods=['post'])
     def marquer_livre(self, request, pk=None):
@@ -118,7 +127,7 @@ class ColisViewSet(viewsets.ModelViewSet):
         Notification.objects.create(
             destinataire=colis.expediteur.user,
             type_notification='livraison',
-            message=f"Votre colis {colis.reference} a été livré avec succès"
+            message=f"Votre colis {colis.code_suivi} a été livré avec succès"
         )
         return Response({'status': 'Colis marqué comme livré'})
 
@@ -375,18 +384,25 @@ def dashboard_agent(request):
     # Gestion POST pour marquer livré
     if request.method == 'POST':
         colis_id = request.POST.get('id_colis')
+        action = request.POST.get('action')
         if colis_id:  # Vérifie que colis_id existe
             try:
                 Colis.objects.filter(agent__user=request.user)
-                colis.statut = 'livre'
-                colis.save()
-                messages.success(request, f"Colis {colis.code_suivi} marqué comme livré.")
+                if action == 'marquer_livre':
+                    colis.statut = 'livre'
+                    colis.save()
+                    messages.success(request, f"Colis {colis.code_suivi} marqué comme livré.")
+                elif action == 'signaler_probleme':
+                    colis.statut = 'probleme'
+                    colis.save()
+                    messages.success(request, f"Colis {colis.code_suivi} marqué comme problématique.")
+                else:
+                    messages.error(request, "Action non reconnue.")
             except Colis.DoesNotExist:
-               messages.error(request, "Colis non trouvé ou non assigné à vous.")
+                messages.error(request, "Colis non trouvé ou non assigné à vous.")
         else:
-            messages.error(request, "Aucun colis spécifié.")
+            messages.error(request, "Aucun colis ou action spécifié.")
         return redirect('dashboard_agent')
-        
     
     # Liste des colis et stats
     colis = Colis.objects.filter(agent__user=request.user)

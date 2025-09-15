@@ -107,10 +107,23 @@
                                 <form method="post" action="{% url 'dashboard_agent' %}" style="display:inline;">
                                     {% csrf_token %}
                                     <input type="hidden" name="id_colis" value="{{ colis.id }}">
-                                    <button type="submit" class="text-blue-600 hover:text-blue-900">Marquer livré</button>
+                                    <input type="hidden" name="action" value="marquer_livre">
+                                    <button type="submit" class="text-blue-600 hover:text-blue-900 mr-3">Marquer livré</button>
+                                </form>
+                            {% endif %}
+                            {% if colis.statut != 'livre' and colis.statut != 'probleme' %}
+                                <form method="post" action="{% url 'dashboard_agent' %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="id_colis" value="{{ colis.id }}">
+                                    <input type="hidden" name="action" value="signaler_probleme">
+                                    <button type="submit" class="text-red-600 hover:text-red-900">Signaler problème</button>
                                 </form>
                             {% else %}
-                                <span class="text-gray-500">Déjà livré</span>
+                                {% if colis.statut == 'livre' %}
+                                    <span class="text-gray-500">Déjà livré</span>
+                                {% elif colis.statut == 'probleme' %}
+                                    <span class="text-gray-500">Problème signalé</span>
+                                {% endif %}
                             {% endif %}
                         </td>
                     </tr>

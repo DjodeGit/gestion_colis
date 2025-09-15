@@ -53,14 +53,14 @@ urlpatterns = [
     path('connexion/', connexion, name='connexion'),
     path('deconnexion/', deconnexion, name='deconnexion'),
     path('tache/', tache_form, name='tache_form'), 
-
+    
     # Dashboards
     path('dashboard/expediteur/', dashboard_expediteur, name='dashboard_expediteur'),
     path('dashboard/agent/', dashboard_agent, name='dashboard_agent'),
     path('dashboard/transporteur/', dashboard_transporteur, name='dashboard_transporteur'),
     path('dashboard/', dashboard_admin, name='dashboard_admin'),
     path('inscrire-agent/', views.inscrire_agent, name='inscrire_agent'),
-   path('connexion1/', CustomLoginView.as_view(), name='connexion1'),
+    path('connexion1/', CustomLoginView.as_view(), name='connexion1'),
     # Gestion des colis
     path('colis/creer/', creer_colis, name='creer_colis'),
     re_path(r'^colis/(?P<colis_id>[0-9a-f-]+)/attribuer-transporteur/$', attribuer_transporteur, name='attribuer_transporteur'),
@@ -93,5 +93,11 @@ urlpatterns = [
     path("agents/creer/", views.creer_agent, name="creer_agent"),
     path("agents/modifier/<int:pk>/", views.modifier_agent, name="modifier_agent"),
     path("agents/supprimer/<int:pk>/", views.supprimer_agent, name="supprimer_agent"),
-]
+     # Password Reset
+    path('password_reset/', auth_views.PasswordResetView.as_view(template_name='password_reset.html'), name='password_reset'),
+    path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(template_name='password_reset_done.html'), name='password_reset_done'),
+    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='password_reset_confirm.html'), name='password_reset_confirm'),
+    path('reset/done/', auth_views.PasswordResetCompleteView.as_view(template_name='password_reset_complete.html'), name='password_reset_complete'),
 
+
+]
