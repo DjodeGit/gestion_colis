@@ -6,7 +6,7 @@ from drf_yasg import openapi
 from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 from django.contrib.auth import views as auth_views
-
+from django.contrib.auth.views import PasswordResetConfirmView
 from .views import (
     InscriptionExpediteurAPIView,
     index, inscription, connexion, deconnexion,
